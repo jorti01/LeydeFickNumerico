@@ -12,7 +12,7 @@ El proyecto requiere que se instalen las siguientes bibliotecas de Python:
 Puedes instalar estas bibliotecas usando pip:
 <pre><code>
 $ pip install tkinter numpy matplotlib
-```
+
 </code></pre>
 
 
