@@ -10,8 +10,11 @@ El proyecto requiere que se instalen las siguientes bibliotecas de Python:
 - Matplotlib
 
 Puedes instalar estas bibliotecas usando pip:
-```shell
-pip install tkinter numpy matplotlib
+<pre><code>```shell
+$ pip install tkinter numpy matplotlib
+```
+</code></pre>
+
 
 ## Uso
 Para ejecutar el programa, simplemente ejecuta el archivo ley_de_fick.py en Python. Aparecerá una ventana con dos opciones: "Ley de Fick: Estable" y "Ley de Fick: Transitorio".
