@@ -8,13 +8,27 @@ from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg)
 
 
 def jacobi_method(A, b, tolerance=1e-6):
+    """
+    Implementación del método de Jacobi para resolver un sistema de ecuaciones lineales Ax = b.
+
+    Args:
+        A (numpy.ndarray): Matriz de coeficientes del sistema.
+        b (numpy.ndarray): Vector de términos independientes.
+        tolerance (float, optional): Tolerancia para determinar la convergencia del método. Valor por defecto es 1e-6.
+
+    Returns:
+        numpy.ndarray: Vector solución x del sistema de ecuaciones.
+    """
+
     n = len(b)
     x = np.zeros_like(b)
     x_new = np.zeros_like(b)
 
     while True:
         for i in range(n):
+            # Calculamos el término de suma
             sum_term = np.dot(A[i, :i], x[:i]) + np.dot(A[i, i+1:], x[i+1:])
+            # Calculamos el nuevo valor de x
             x_new[i] = (b[i] - sum_term) / A[i, i]
 
         if np.linalg.norm(x - x_new) < tolerance:
@@ -24,7 +38,19 @@ def jacobi_method(A, b, tolerance=1e-6):
 
     return x
 
-def generar_matriz(alpha, tamaño_paso,nodos):
+def generar_matriz(alpha, tamaño_paso, nodos):
+    """
+    Genera una matriz tridiagonal simétrica utilizada en la ley de Fick Estable
+
+    Args:
+        alpha (float): Coeficiente de difusión.
+        tamaño_paso (float): Tamaño del paso espacial.
+        nodos (int): Número de nodos.
+
+    Returns:
+        numpy.ndarray: Matriz generada.
+    """
+
     Y = alpha**2 * (tamaño_paso**2)
     tamaño_matriz = int(nodos) - 1
     matriz = np.zeros((tamaño_matriz, tamaño_matriz))
@@ -35,36 +61,76 @@ def generar_matriz(alpha, tamaño_paso,nodos):
             matriz[i, i + 1] = 1
             matriz[i + 1, i] = 1
 
-    matriz[len(matriz)-1,len(matriz)-2] = 2
+    matriz[len(matriz)-1, len(matriz)-2] = 2
 
     return matriz
 
-def generar_vector_b(tamaño_matriz,parametro):
+
+def generar_vector_b(tamaño_matriz, parametro):
+    """
+    Genera el vector b utilizado en la Ley de Fick estable.
+
+    Args:
+        tamaño_matriz (int): Tamaño de la matriz.
+        parametro (int): Parámetro utilizado para generar el vector b.
+
+    Returns:
+        numpy.ndarray: Vector b generado.
+    """
+
     vector_b = np.zeros((tamaño_matriz, 1))
     vector_b[0] = -int(parametro)
     return vector_b
 
 def metodo_diferencias_finitas_estable(param1, param3, param4, param5):
+    # Se crea una ventana emergente (popup) utilizando tkinter
     popup = Toplevel(root)
-    matriz_A = generar_matriz(float(param4),int(param1)/int(param3),param3)
-    vector_B = generar_vector_b(int(param3)-1,param5)
-    x = jacobi_method(matriz_A, vector_B)
-    T = np.linspace(0,int(param1),int(param3)-1)
 
+    # Se genera la matriz A utilizando la función generar_matriz, pasando los parámetros correspondientes
+    matriz_A = generar_matriz(float(param4), int(param1) / int(param3), param3)
+
+    # Se genera el vector B utilizando la función generar_vector_b, pasando los parámetros correspondientes
+    vector_B = generar_vector_b(int(param3) - 1, param5)
+
+    # Se utiliza el método de Jacobi para resolver el sistema de ecuaciones lineales
+    x = jacobi_method(matriz_A, vector_B)
+
+    # Se crea un array T de valores equiespaciados entre 0 y param1, con param3-1 elementos
+    T = np.linspace(0, int(param1), int(param3) - 1)
+
+    # Se crea una figura 
     fig = Figure(figsize=(5, 5), dpi=100)
     ax = fig.add_subplot(111)
+
+    # Se traza la gráfica de T vs x utilizando los valores calculados
     ax.plot(T, x)
-    fig.suptitle('Grafico de T vs X')
+
+    # Se establece un título para la figura
+    fig.suptitle('Gráfico de T vs X')
+
+    # Se establecen etiquetas para los ejes x e y
     ax.set_xlabel('x')
     ax.set_ylabel('T')
+
+    # Se desactiva la notación científica para el eje y
     ax.yaxis.get_major_formatter().set_scientific(False)
+
+    # Se desactiva el uso de offset para el eje y
     ax.yaxis.get_major_formatter().set_useOffset(False)
+
+    # Se activa el grid
     ax.grid(True)
+
+    # Se ajusta la figura para que se ajuste al plot
     fig.tight_layout()
 
+    # Se crea un canvas y se dibuja la grafica en el
     canvas = FigureCanvasTkAgg(fig, master=popup)
     canvas.draw()
+
+    # Se empaqueta el lienzo de dibujo en la ventana emergente
     canvas.get_tk_widget().pack()
+
 
 
 
@@ -128,38 +194,52 @@ def calcular_fick_transitorio(longitud, t_total, num_nodos_espacio, num_nodos_ti
     numero_desconocidas = num_nodos_espacio - 1
     numero_ecuaciones = numero_desconocidas * num_nodos_tiempo
 
+    # Generar la matriz A utilizando la función generar_matriz_A, pasando los parámetros correspondientes
     A = generar_matriz_A(longitud, t_total, num_nodos_espacio, num_nodos_tiempo, alpha)
+
+    # Generar el vector B utilizando la función generar_matriz_B, pasando los parámetros correspondientes
     b = generar_matriz_B(longitud, t_total, num_nodos_espacio, num_nodos_tiempo, temp_contorno, temp_inicial)
 
-    # Solucionar sistema usando Jacobi
+    # Inicializar vectores de solución
     x = np.zeros(numero_ecuaciones)
     x_new = np.copy(x)
 
     max_iterations = 1000
     tolerance = 1e-6
 
+    # Resolver el sistema de ecuaciones utilizando el método de Jacobi
     for iteration in range(max_iterations):
         for i in range(numero_ecuaciones):
             x_new[i] = (b[i] - np.dot(A[i, :], x) + A[i, i] * x[i]) / A[i, i]
 
+        # Verificar la convergencia utilizando la norma euclidiana de la diferencia entre las soluciones
         if np.linalg.norm(x_new - x) < tolerance:
             break
 
         x = np.copy(x_new)
 
+    # Reorganizar el vector solución en una matriz de tamaño (num_nodos_tiempo, numero_desconocidas)
     return x.reshape((num_nodos_tiempo, numero_desconocidas))
 
 
+
 def generar_matriz_A(longitud, t_total, num_nodos_espacio, num_nodos_tiempo, alpha):
+    # Calcular los tamaños de paso
     delta_x = float(longitud) / float(num_nodos_espacio)
     delta_t = float(t_total) / float(num_nodos_tiempo)
+
+    # Calcular el número de incógnitas
     N = int(num_nodos_espacio) - 1
+
+    # Crear una matriz de ceros de tamaño (N * num_nodos_tiempo) x (N * num_nodos_tiempo)
     A = np.zeros((N * int(num_nodos_tiempo), N * int(num_nodos_tiempo)))
 
+    # Definir los coeficientes B0, B1 y B2
     B0 = delta_t
     B1 = -2 * (delta_x**2) - delta_t + (delta_x**2) * alpha**2
     B2 = delta_t
 
+    # Rellenar la matriz A con los coeficientes correspondientes
     for i in range(N * int(num_nodos_tiempo)):
         A[i, i] = B1
 
@@ -178,15 +258,23 @@ def generar_matriz_A(longitud, t_total, num_nodos_espacio, num_nodos_tiempo, alp
     return A
 
 
+
 def generar_matriz_B(longitud, t_total, num_nodos_espacio, num_nodos_tiempo, temp_contorno, temp_inicial):
+    # Calcular los tamaños de paso
     delta_x = float(longitud) / float(num_nodos_espacio)
     delta_t = float(t_total) / float(num_nodos_tiempo)
+
+    # Calcular el número de incógnitas
     N = int(num_nodos_espacio) - 1
+
+    # Crear un vector de ceros de tamaño N * num_nodos_tiempo
     b = np.zeros(N * int(num_nodos_tiempo))
 
+    # Definir los coeficientes B2 y B3
     B2 = delta_t
     B3 = -delta_x ** 2
 
+    # Rellenar el vector b con los valores correspondientes
     for j in range(int(num_nodos_tiempo)):
         for i in range(N):
             if i == 0:
@@ -194,10 +282,12 @@ def generar_matriz_B(longitud, t_total, num_nodos_espacio, num_nodos_tiempo, tem
             else:
                 b[j * N + i] = j * B3
 
+    # Aplicar las condiciones de contorno
     b[0] -= temp_contorno
     b[N * (num_nodos_tiempo - 1)] -= temp_inicial
 
     return b
+
 
 
 
